@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111318">
+  <title>atrazo — Animación vectorial</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Trazo inicio"><span class="brand-mark">✳</span><span>trazo</span><small>STUDIO</small></a>
+    <div class="project-title"><strong>Estudio sin título</strong><span id="saveStatus">Cambios guardados localmente</span></div>
+    <div class="top-actions">
+      <label class="setting">Tolerancia <input id="tolerance" type="number" min="0" max="20" step="0.5" value="2"> px</label>
+      <label class="setting"><input id="autoClose" type="checkbox"> Cerrar trazo</label>
+      <label class="setting">Trazo <input id="strokeWidth" type="number" min="1" max="80" value="5"> px</label>
+      <button id="undoBtn" class="icon-btn" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button>
+      <button id="redoBtn" class="icon-btn" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>
+      <button id="saveBtn" class="button subtle">Guardar JSON</button>
+      <label class="button subtle file-button">Abrir JSON<input id="loadFile" type="file" accept=".json,application/json"></label>
+      <button id="exportPng" class="button subtle">Secuencia PNG</button>
+      <button id="exportSvg" class="button primary">Exportar SVG</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="tool-rail" aria-label="Herramientas">
+      <button class="tool active" data-tool="draw" title="Dibujar (B)"><span>✎</span><small>Dibujar</small></button>
+      <button class="tool" data-tool="nodes" title="Editar nodos (E)"><span>⌗</span><small>Nodos</small></button>
+      <button class="tool" data-tool="sculpt" title="Empujar (S)"><span>◉</span><small>Empujar</small></button>
+      <button class="tool" data-tool="fill" title="Bote de pintura (G)"><span>◒</span><small>Rellenar</small></button>
+      <div class="rail-divider"></div>
+      <button id="onionBtn" class="tool toggle" title="Papel cebolla"><span>◉</span><small>Cebolla</small></button>
+      <div class="rail-spacer"></div>
+      <div class="tool-hint"><kbd>?</kbd><small>Atajos</small></div>
+    </aside>
+
+    <section class="workspace">
+      <div class="canvas-toolbar">
+        <div class="tool-context"><span class="context-dot"></span><strong id="toolName">Dibujar</strong><span id="toolHint">Arrastra para dibujar un trazo</span></div>
+        <div class="canvas-actions">
+          <label class="color-quick">Color <input id="quickColor" type="color" value="#24242b" aria-label="Color del trazo"></label>
+          <button id="deleteBtn" class="icon-btn danger" title="Eliminar trazo seleccionado (Supr)">⌫</button>
+          <button id="zoomOut" class="icon-btn" title="Alejar">−</button><span id="zoomLabel" class="zoom-label">100%</span><button id="zoomIn" class="icon-btn" title="Acercar">+</button>
+          <button id="fitCanvas" class="icon-btn" title="Ajustar al área">⛶</button>
+        </div>
+      </div>
+      <div id="stage" class="stage">
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="drawCanvas" aria-label="Lienzo de animación"></canvas>
+        </div>
+        <div class="stage-note"><span class="live-dot"></span> Lienzo 1280 × 720 <span>·</span> <span id="pointerPressure">Presión —</span></div>
+      </div>
+
+      <section class="timeline" aria-label="Línea de tiempo">
+        <div class="timeline-head">
+          <div class="timeline-title"><strong>Línea de tiempo</strong><span id="frameCount">1 fotograma</span></div>
+          <div class="timeline-controls">
+            <button id="firstFrame" class="mini-btn" title="Primer fotograma">|◀</button>
+            <button id="prevFrame" class="mini-btn" title="Fotograma anterior (←)">◀</button>
+            <button id="playBtn" class="play-btn" title="Reproducir (espacio)">▶</button>
+            <button id="nextFrame" class="mini-btn" title="Fotograma siguiente (→)">▶</button>
+            <button id="lastFrame" class="mini-btn" title="Último fotograma">▶|</button>
+            <label class="fps-control">FPS <select id="fps"><option>8</option><option selected>12</option><option>15</option><option>24</option><option>30</option></select></label>
+            <button id="duplicateFrame" class="button primary compact" title="Duplicar fotograma (D)">＋ Duplicar</button>
+          </div>
+        </div>
+        <div class="frame-strip-wrap"><div id="frameStrip" class="frame-strip"></div></div>
+        <div class="audio-track">
+          <div class="audio-label"><span class="audio-icon">♫</span><span>Audio</span><label class="audio-load" title="Cargar audio">＋<input id="audioFile" type="file" accept="audio/mpeg,audio/wav,audio/*"></label></div>
+          <canvas id="waveform" aria-label="Forma de onda de audio"></canvas>
+          <div class="audio-actions"><span id="audioName">Sin pista</span><button id="removeAudio" class="mini-btn" title="Quitar audio">×</button></div>
+        </div>
+        <div class="timeline-foot"><span>Arrastra el cabezal para recorrer · ← / → avanza un fotograma</span><span id="playheadLabel">Fotograma 1</span></div>
+      </section>
+    </section>
+
+    <aside class="inspector">
+      <div class="inspector-tabs"><button class="tab active">Propiedades</button><button class="tab">Capas <span class="layer-count" id="layerCount">0</span></button></div>
+      <section class="panel-section">
+        <div class="section-heading"><div><span class="section-kicker">ESTILO</span><h2>Paleta global</h2></div><button id="addColor" class="add-btn" title="Agregar color">＋</button></div>
+        <p class="section-desc">Los cambios se aplican a todos los fotogramas.</p>
+        <div id="palette" class="palette-list"></div>
+      </section>
+      <section class="panel-section selection-panel">
+        <div class="section-heading"><div><span class="section-kicker">SELECCIÓN</span><h2 id="selectionTitle">Sin selección</h2></div><span class="selection-mark">⌖</span></div>
+        <div id="selectionInfo" class="selection-info">Selecciona un trazo con la herramienta de nodos para editar sus puntos.</div>
+        <label class="field-label">Color de contorno<select id="strokeColorSelect"></select></label>
+        <label class="field-label">Color de relleno<select id="fillColorSelect"><option value="">Sin relleno</option></select></label>
+        <label class="field-label">Grosor <span class="field-value" id="widthValue">5 px</span><input id="selectedWidth" type="range" min="1" max="40" value="5"></label>
+      </section>
+      <section class="panel-section tips-panel"><div class="tip-icon">✦</div><div><strong>Atajo de animación</strong><p>Duplica el fotograma y mueve los nodos para crear la siguiente pose.</p><button id="tipDuplicate" class="text-link">Duplicar ahora <span>→</span></button></div></section>
+      <div class="inspector-bottom"><span class="avatar">T</span><span><strong>Espacio de trabajo</strong><small>Guardado automático activo</small></span><span class="online-dot"></span></div>
+    </aside>
+  </main>
+  <div id="toast" class="toast" role="status"></div>
+  <dialog id="shortcutsDialog"><div class="dialog-head"><h2>Atajos de teclado</h2><button id="closeShortcuts" class="icon-btn">×</button></div><div class="shortcut-grid"><span>Dibujar</span><kbd>B</kbd><span>Editar nodos</span><kbd>E</kbd><span>Empujar</span><kbd>S</kbd><span>Bote de pintura</span><kbd>G</kbd><span>Duplicar fotograma</span><kbd>D</kbd><span>Reproducir / pausa</span><kbd>Espacio</kbd><span>Fotograma anterior / siguiente</span><kbd>← / →</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Eliminar trazo</span><kbd>Supr</kbd></div></dialog>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
